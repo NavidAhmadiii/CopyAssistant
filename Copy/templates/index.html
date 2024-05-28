@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copying Template</title>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+  <div class="container">
+    <div class="header">Copying</div>
+    <div class="timer" id="timer">00:00:00</div>
+    <div class="content">
+      <div class="text-area-section">
+        <textarea id="text-area" class="text-area" placeholder="Enter your text here..."></textarea>
+        <div class="footer">
+          <button class="start" onclick="start()">Start</button>
+          <button class="restart" onclick="restart()">Restart</button>
+          <button class="spell-check" onclick="spellCheck()">Spell Check</button>
+          <button class="create-pdf" onclick="createPdf()">Create Pdf</button>
+        </div>
+      </div>
+      <div class="highlighting-tools">Highlighting Tools</div>
+      <div class="pdf-section">
+        <iframe id="pdf-reader" class="pdf-reader" src="{% if pdf_url %}{{ pdf_url }}{% endif %}"></iframe>
+        <div class="pdf-controls">
+          <form id="pdf-form" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="pdf" id="pdf-input">
+          </form>
+          <button class="open-pdf" onclick="openPdf()">Open PDF</button>
+          <button class="close-pdf" onclick="closePdf()">Close PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="{% static 'js/script.js' %}"></script>
+</body>
+</html>
