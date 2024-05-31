@@ -1,3 +1,4 @@
+import textwrap
 import time
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404
@@ -83,18 +84,48 @@ class CreatePDFView(View):
             else:
                 return JsonResponse({'error': 'No file uploaded'}, status=400)
 
-            pdf = PDFDocument.objects.create(title='عنوان مورد نظر', file=file_path)
+            pdf = PDFDocument.objects.create(title='', file=file_path)
             pdf_id = pdf.id
 
             data = json.loads(request.POST['data'])
             text = data.get('text')
             timer = data.get('timer')
 
-            entry = UserEntry.objects.create(pdf_id=pdf_id, user_text=text, spell_checked_text='', duration=timer)
+            # Spell check the user text
+            spell = SpellChecker()
+            words = text.split()
+            corrected_text = []
 
+            for word in words:
+                if word in spell.unknown([word]):
+                    corrected_word = spell.correction(word)
+                    corrected_text.append(f"{word} ({corrected_word})")
+                else:
+                    corrected_text.append(word)
+
+            # Create a string with the corrected text
+            corrected_text_str = ' '.join(corrected_text)
+
+            # Calculate statistics
+            word_count = len(words)
+            slash_count = text.count('/')
+            average_count = word_count / text.count('\n') if '\n' in text else 0
+
+            # Create the UserEntry object
+            entry = UserEntry.objects.create(
+                pdf_id=pdf_id,
+                user_text=text,
+                spell_checked_text=corrected_text_str,
+                duration=timer
+            )
+
+            # Create the HTTP response
             response = HttpResponse(content_type='application/pdf')
             response['Content-Disposition'] = 'attachment; filename="spell_checked.pdf"'
+
+            # Generate the PDF content
             self.create_pdf(response, entry)
+
             return response
 
         except Exception as e:
@@ -106,9 +137,16 @@ class CreatePDFView(View):
             c = canvas.Canvas(response, pagesize=letter)
             width, height = letter
 
-            y = height - 100
-            c.drawString(100, y, "Original Text:")
-            y -= 20
+            # Display statistics above the PDF content
+            c.drawString(100, height - 50, f"Timer: {entry.duration}")
+            c.drawString(100, height - 70, f"Words: {entry.user_text.count(' ') + 1}")
+            c.drawString(100, height - 90, f"Slashes: {entry.user_text.count('/')}")
+            c.drawString(100, height - 110,
+                         f"Average: {len(entry.user_text.splitlines()) / (entry.user_text.count(' ') + 1):.2f}")
+
+            # Original text section
+            c.drawString(100, height - 150, "Original Text:")
+            y = height - 170
 
             # Spell check the user text
             spell = SpellChecker()
@@ -118,15 +156,15 @@ class CreatePDFView(View):
             for word in words:
                 if word in spell.unknown([word]):
                     corrected_word = spell.correction(word)
-                    corrected_text.append(f"<span class='corrected'>{word}</span> ({corrected_word})")
+                    corrected_text.append(f"{word} ({corrected_word})")
                 else:
                     corrected_text.append(word)
 
             # Display the corrected text
-            c.drawString(100, y, ' '.join(corrected_text))
-            y -= 40
+            for line in textwrap.wrap(' '.join(corrected_text), width=70):
+                c.drawString(120, y, line)
+                y -= 20
 
-            c.drawString(100, y, f"Duration: {entry.duration}")
             c.showPage()
             c.save()
         except Exception as e:
