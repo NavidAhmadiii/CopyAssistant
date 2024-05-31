@@ -122,7 +122,7 @@ function checkForErrors() {
     const text = document.getElementById('text-area').value;
     const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
     const slashCount = (text.match(/\//g) || []).length;
-    const averageCount = wordCount > 0 ? (wordCount / text.split(/\n/).length).toFixed(2) : 0;
+    const averageCount = slashCount > 0 ? (wordCount / slashCount).toFixed(2) : 0;
 
     document.getElementById('word-count').innerText = `Words: ${wordCount}`;
     document.getElementById('slash-count').innerText = `Slashes: ${slashCount}`;
