@@ -11,8 +11,8 @@ function start() {
 function restart() {
     const textArea = document.getElementById('text-area');
     textArea.value = '';
-    const pdfReader = document.getElementById('pdf-reader');
-    pdfReader.src = '';
+    // const pdfReader = document.getElementById('pdf-reader');
+    // pdfReader.src = '';
     clearInterval(timer);
     seconds = 0;
     updateTimer();
