@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{%load static%}
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,8 +11,7 @@
 <div class="container">
     <div class="header">Copying Assist</div>
     <div class="status-bar">
-<!--        <div id="timer">Timer: 00:00:00</div>-->
-         <div><span class="label">Timer: </span><span id="timer">00:00:00</span></div>
+        <div><span class="label">Timer: </span><span id="timer">00:00:00</span></div>
         <div id="word-count">Words: 0</div>
         <div id="slash-count">Slashes: 0</div>
         <div id="average-count">Average: 0</div>
@@ -45,6 +44,15 @@
         </div>
     </div>
 </div>
+
+<!-- The Modal -->
+<div id="pdf-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <div id="pdf-list"></div>
+    </div>
+</div>
+
 <script src="{% static 'js/script.js' %}"></script>
 </body>
 </html>

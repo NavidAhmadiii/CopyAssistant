@@ -8,6 +8,9 @@ class PDFDocument(models.Model):
     title = models.CharField(max_length=255)
     file = models.FileField(upload_to='pdfs/')
 
+    def __str__(self):
+        return f"{self.title} - {self.file.name}"
+
 
 class UserEntry(models.Model):
     pdf = models.ForeignKey(PDFDocument, on_delete=models.CASCADE)

@@ -104,18 +104,19 @@ function closePdf() {
     document.getElementById('pdf-reader').src = '';
 }
 
-function loadFromDatabase() {
-    fetch('/load_pdf_from_db/')
-        .then(response => response.json())
-        .then(data => {
-            const pdfReader = document.getElementById('pdf-reader');
-            if (data.length > 0) {
-                pdfReader.src = data[0].url;  // Load the first PDF for simplicity
-            } else {
-                alert('No PDFs found in the database.');
-            }
-        });
-}
+//
+// function loadFromDatabase() {
+//     fetch('/load_pdf_from_db/')
+//         .then(response => response.json())
+//         .then(data => {
+//             const pdfReader = document.getElementById('pdf-reader');
+//             if (data.length > 0) {
+//                 pdfReader.src = data[0].url;  // Load the first PDF for simplicity
+//             } else {
+//                 alert('No PDFs found in the database.');
+//             }
+//         });
+// }
 
 function checkForErrors() {
     const text = document.getElementById('text-area').value;
@@ -145,3 +146,59 @@ function highlightTextArea() {
     highlightingTools.classList.toggle('active');
 }
 
+
+// load from db
+
+async function loadFromDatabase() {
+    try {
+        const response = await fetch('/load_pdfs/');
+        if (!response.ok) {
+            throw new Error('Failed to load PDFs from database');
+        }
+        const pdfs = await response.json();
+        displayPDFList(pdfs);
+        openModal();
+    } catch (error) {
+        console.error('Error loading PDFs from database:', error.message);
+    }
+}
+
+function displayPDFList(pdfs) {
+    const pdfListContainer = document.getElementById('pdf-list');
+    pdfListContainer.innerHTML = ''; // Clear existing list
+
+    pdfs.forEach(pdf => {
+        const pdfItem = document.createElement('div');
+        pdfItem.className = 'pdf-item';
+        pdfItem.textContent = pdf.title;
+        pdfItem.onclick = () => openPdfFromUrl(pdf.url);
+        pdfListContainer.appendChild(pdfItem);
+    });
+}
+
+function openPdfFromUrl(url) {
+    const pdfReader = document.getElementById('pdf-reader');
+    pdfReader.src = url;
+    closeModal();
+}
+
+function openModal() {
+    const modal = document.getElementById('pdf-modal');
+    modal.style.display = 'block';
+}
+
+function closeModal() {
+    const modal = document.getElementById('pdf-modal');
+    modal.style.display = 'none';
+}
+
+// Ensure this function is called when the 'Load from DB' button is clicked
+document.querySelector('.load-from-db').addEventListener('click', loadFromDatabase);
+
+// Close the modal when the user clicks outside of it
+window.onclick = function (event) {
+    const modal = document.getElementById('pdf-modal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
