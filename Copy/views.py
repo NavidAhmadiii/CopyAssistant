@@ -1,6 +1,8 @@
 import textwrap
 import time
 import io
+from datetime import datetime
+
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.views import View
@@ -79,12 +81,12 @@ class SpellCheckView(View):
 class CreatePDFView(View):
     def post(self, request):
         try:
-            # داده‌ها از درخواست دریافت شوند
+            # دریافت داده‌ها از درخواست
             data = json.loads(request.body)
             text = data.get('text')
             timer = data.get('timer')
 
-            # Spell check the user text
+            # بررسی املای متن
             spell = SpellChecker()
             words = text.split()
             corrected_text = []
@@ -96,36 +98,28 @@ class CreatePDFView(View):
                 else:
                     corrected_text.append(word)
 
-            # Create a string with the corrected text
+            # ساخت رشته متن اصلاح شده
             corrected_text_str = ' '.join(corrected_text)
 
-            # Calculate statistics
+            # محاسبه آمار
             word_count = len(words)
             slash_count = text.count('/')
             average_count = word_count / slash_count if slash_count > 0 else 0
 
-            # Generate PDF content
+            # دریافت تاریخ و زمان فعلی
+            now = datetime.now()
+            formatted_timestamp = now.strftime("%Y/%m/%d %H:%M:%S")
+            filename_timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+
+            # ایجاد محتوای PDF
             pdf_buffer = io.BytesIO()
-            self.create_pdf(pdf_buffer, corrected_text_str, word_count, slash_count, average_count, timer)
+            self.create_pdf(pdf_buffer, corrected_text_str, word_count, slash_count, average_count, timer,
+                            formatted_timestamp)
             pdf_buffer.seek(0)
 
-            # Create PDFDocument object
-            pdf_document = PDFDocument.objects.create(
-                title="Spell Checked Document",
-                file=pdf_buffer
-            )
-
-            # Create the UserEntry object
-            entry = UserEntry.objects.create(
-                pdf=pdf_document,
-                user_text=text,
-                spell_checked_text=corrected_text_str,
-                duration=timer
-            )
-
-            # Create the HTTP response
+            # تنظیم پاسخ HTTP برای دانلود فایل PDF
             response = HttpResponse(pdf_buffer, content_type='application/pdf')
-            response['Content-Disposition'] = 'attachment; filename="spell_checked.pdf"'
+            response['Content-Disposition'] = f'attachment; filename="{filename_timestamp}.pdf"'
 
             return response
 
@@ -133,22 +127,23 @@ class CreatePDFView(View):
             print(f"Error creating PDF: {e}")
             return JsonResponse({'error': str(e)}, status=500)
 
-    def create_pdf(self, buffer, text, word_count, slash_count, average_count, timer):
+    def create_pdf(self, buffer, text, word_count, slash_count, average_count, timer, timestamp):
         try:
             c = canvas.Canvas(buffer, pagesize=letter)
             width, height = letter
 
-            # Display statistics above the PDF content
+            # نمایش آمار در بالای محتوای PDF
             c.drawString(100, height - 50, f"Timer: {timer}")
             c.drawString(100, height - 70, f"Words: {word_count}")
             c.drawString(100, height - 90, f"Slashes: {slash_count}")
             c.drawString(100, height - 110, f"Average: {average_count:.2f}")
+            c.drawString(100, height - 130, f"Date: {timestamp}")
 
-            # Original text section
-            c.drawString(100, height - 150, "Corrected Text:")
-            y = height - 170
+            # بخش متن اصلی
+            c.drawString(100, height - 170, "Corrected Text:")
+            y = height - 190
 
-            # Display the corrected text
+            # نمایش متن اصلاح شده
             for line in textwrap.wrap(text, width=70):
                 c.drawString(120, y, line)
                 y -= 20
