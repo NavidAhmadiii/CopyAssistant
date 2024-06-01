@@ -31,9 +31,12 @@ async function createPdf() {
 
     try {
         const response = await fetch('/create-pdf/', {
-            method: 'POST', headers: {
-                'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()
-            }, body: JSON.stringify({text, timer: timerValue})
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({text, timer: timerValue})
         });
 
         if (!response.ok) {
