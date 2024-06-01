@@ -102,7 +102,7 @@ body {
 
 /* این قسمت تغییرات رنگ دکمه‌ها و سایر انیمیشن‌هاست */
 .footer button {
-    padding: 10px 20px;
+    padding: 3px 20px;
     font-size: 16px;
     font-weight: bold;
     border: none;
@@ -110,6 +110,7 @@ body {
     cursor: pointer;
     transition: background-color 0.3s;
     margin-right: 40px;
+    margin-bottom: 10px;
 }
 
 .footer button.start {
@@ -149,9 +150,8 @@ body {
     flex-grow: 1;
     border: 1px solid #ccc;
     border-radius: 8px;
-    /* اضافه کردن ارتفاع و عرض بیشتر */
-    height: calc(100% - 40px);
-    width: 100%;
+    width: 95vh;
+    height: 50vh;
 }
 
 .pdf-controls {
@@ -167,6 +167,7 @@ body {
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
+    margin-bottom: 15px;
 }
 
 /*.pdf-controls button:hover {*/
