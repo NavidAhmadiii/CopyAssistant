@@ -9,63 +9,86 @@ function start() {
 }
 
 function restart() {
-    const textArea = document.getElementById('text-area');
-    textArea.value = '';
-    // const pdfReader = document.getElementById('pdf-reader');
-    // pdfReader.src = '';
+    const editorContent = document.querySelector('.ql-editor');
+    editorContent.innerHTML = '';
     clearInterval(timer);
     seconds = 0;
     updateTimer();
     const spellCheckedDiv = document.getElementById('spell-checked-text');
     spellCheckedDiv.innerText = '';
-    checkForErrors(); // Reset counts
 }
 
 async function createPdf() {
-    const textArea = document.getElementById('text-area');
-    const text = textArea.value;
+    const editorContent = document.querySelector('.ql-editor').innerHTML;
     const timerElement = document.getElementById('timer');
     const timerValue = timerElement.textContent;
 
     clearInterval(timer);
 
+
+    // ارسال محتوای ویرایش شده به سرور
+    const response = await fetch('/create-pdf/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({text: editorContent, timer: timerValue})
+    });
+
+    if (!response.ok) {
+        throw new Error('Create PDF failed');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = 'spell_checked.pdf';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    const pdfContent = htmlToPdfmake(editorContent);
+
+    // تنظیمات مربوط به محتوای PDF
+    const docDefinition = {
+        content: [
+            {text: `Timer: ${timerValue}`, style: 'header'},
+            {text: ' '}, // خط خالی برای فاصله
+            ...pdfContent // محتوای تبدیل شده
+        ],
+        styles: {
+            header: {
+                fontSize: 18,
+                bold: true,
+                margin: [0, 0, 0, 10]
+            },
+            content: {
+                fontSize: 12
+            }
+        }
+    };
+
+    // ایجاد و دانلود PDF
+    pdfMake.createPdf(docDefinition).download('document.pdf');
+}
+
+document.querySelector(".create-pdf").addEventListener("click", createPdf);
+
+async function spellCheck() {
+    const editorContent = document.querySelector('.ql-editor');
+    const text = editorContent.innerHTML;
+
     try {
-        const response = await fetch('/create-pdf/', {
+        const response = await fetch('/spell-check/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCSRFToken()
             },
-            body: JSON.stringify({text, timer: timerValue})
-        });
-
-        if (!response.ok) {
-            throw new Error('Create PDF failed');
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'spell_checked.pdf';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
-}
-
-async function spellCheck() {
-    const textArea = document.getElementById('text-area');
-    const text = textArea.value;
-
-    try {
-        const response = await fetch('/spell-check/', {
-            method: 'POST', headers: {
-                'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()
-            }, body: JSON.stringify({text})
+            body: JSON.stringify({text})
         });
 
         if (!response.ok) {
@@ -107,22 +130,8 @@ function closePdf() {
     document.getElementById('pdf-reader').src = '';
 }
 
-//
-// function loadFromDatabase() {
-//     fetch('/load_pdf_from_db/')
-//         .then(response => response.json())
-//         .then(data => {
-//             const pdfReader = document.getElementById('pdf-reader');
-//             if (data.length > 0) {
-//                 pdfReader.src = data[0].url;  // Load the first PDF for simplicity
-//             } else {
-//                 alert('No PDFs found in the database.');
-//             }
-//         });
-// }
-
 function checkForErrors() {
-    const text = document.getElementById('text-area').value;
+    const text = document.getElementById('editor').innerText;
     const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
     const slashCount = (text.match(/\//g) || []).length;
     const averageCount = slashCount > 0 ? (wordCount / slashCount).toFixed(2) : 0;
@@ -142,7 +151,6 @@ function updateTimer() {
     seconds++;
 }
 
-// Your existing JavaScript functions
 
 function highlightTextArea() {
     const highlightingTools = document.querySelector('.highlighting-tools');
@@ -205,3 +213,35 @@ window.onclick = function (event) {
         closeModal();
     }
 }
+
+<!-- Quill JS -->
+// editor
+document.addEventListener("DOMContentLoaded", function () {
+    var toolbarOptions = [
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{'header': 1}, {'header': 2}],
+        [{'list': 'ordered'}, {'list': 'bullet'}],
+        [{'script': 'sub'}, {'script': 'super'}],
+        [{'indent': '-1'}, {'indent': '+1'}],
+        [{'direction': 'rtl'}],
+        [{'size': ['small', false, 'large', 'huge']}],
+        [{'header': [1, 2, 3, 4, 5, 6, false]}],
+        [{'color': []}, {'background': []}],
+        [{'font': []}],
+        [{'align': []}],
+        ['clean']
+    ];
+
+    var quill = new Quill('#editor', {
+        modules: {
+            toolbar: toolbarOptions
+        },
+        theme: 'snow'
+    });
+
+    document.querySelector(".create-pdf").addEventListener("click", function () {
+        var editorContent = document.querySelector('.ql-editor').innerHTML;
+        console.log(editorContent);
+    });
+});
