@@ -19,18 +19,20 @@ function restart() {
 }
 
 async function createPdf() {
-    const editorContent = document.querySelector('.ql-editor').innerHTML;
+    const editorContent = document.querySelector('.ql-editor').innerText; // استفاده از innerText برای حذف تگ‌های HTML
     const timerElement = document.getElementById('timer');
     const timerValue = timerElement.textContent;
 
     clearInterval(timer);
 
-
     // ارسال محتوای ویرایش شده به سرور
     const response = await fetch('/create-pdf/', {
-        method: 'POST', headers: {
-            'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()
-        }, body: JSON.stringify({text: editorContent, timer: timerValue})
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({text: editorContent, timer: timerValue})
     });
 
     if (!response.ok) {
@@ -47,18 +49,43 @@ async function createPdf() {
     a.click();
     window.URL.revokeObjectURL(url);
 
-    const pdfContent = htmlToPdfmake(editorContent);
+    // تبدیل متن HTML به محتوای PDF
+    const pdfContent = [];
+
+    // جدا کردن متن به کلمات و اعمال تنظیمات مربوط به هر کلمه
+    const words = editorContent.split(/\s+/);
+    words.forEach(word => {
+        let style = {};
+        // اعمال تنظیمات مربوط به هر کلمه
+        if (word.includes('bold')) {
+            style.bold = true;
+        }
+        if (word.includes('italic')) {
+            style.italics = true;
+        }
+        if (word.includes('underline')) {
+            style.decoration = 'underline';
+        }
+        if (word.includes('red')) {
+            style.color = 'red';
+        }
+        // اضافه کردن کلمه با تنظیمات به محتوای PDF
+        pdfContent.push({text: word, ...style});
+    });
 
     // تنظیمات مربوط به محتوای PDF
     const docDefinition = {
-        content: [{text: `Timer: ${timerValue}`, style: 'header'}, {text: ' '}, // خط خالی برای فاصله
+        content: [
+            {text: `Timer: ${timerValue}`, style: 'header'},
+            {text: ' '}, // خط خالی برای فاصله
             ...pdfContent // محتوای تبدیل شده
-        ], styles: {
+        ],
+        styles: {
             header: {
-                fontSize: 18, bold: true, margin: [0, 0, 0, 10]
-            }, content: {
-                fontSize: 12
-            }
+                fontSize: 18,
+                bold: true,
+                margin: [0, 0, 0, 10]
+            },
         }
     };
 
@@ -179,7 +206,7 @@ function displayPDFList(pdfs) {
 function openPdfFromUrl(url) {
     const pdfReader = document.getElementById('pdf-reader');
     pdfReader.src = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`;
-    closeModal();
+    closePdfModal();
 }
 
 function openModal() {
@@ -187,10 +214,10 @@ function openModal() {
     modal.style.display = 'block';
 }
 
-function closeModal() {
-    const modal = document.getElementById('pdf-modal');
-    modal.style.display = 'none';
-}
+// function closeModal() {
+//     const modal = document.getElementById('pdf-modal');
+//     modal.style.display = 'none';
+// }
 
 // Ensure this function is called when the 'Load from DB' button is clicked
 document.querySelector('.load-from-db').addEventListener('click', loadFromDatabase);
@@ -199,7 +226,7 @@ document.querySelector('.load-from-db').addEventListener('click', loadFromDataba
 window.onclick = function (event) {
     const modal = document.getElementById('pdf-modal');
     if (event.target == modal) {
-        closeModal();
+        closePdfModal();
     }
 }
 
@@ -228,10 +255,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     quill.keyboard.addBinding({
-        key: 'space',
-        collapsed: true,
-        format: [],
-        handler: function (range, context) {
+        key: 'space', collapsed: true, format: [], handler: function (range, context) {
             quill.format('color', 'black');
             return true;
         }
@@ -283,3 +307,71 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log(editorContent);
     });
 });
+
+
+//setting and chart
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Modal settings
+    const settingsModal = document.getElementById("settings-modal");
+    const closeSettingsBtn = document.querySelector(".close");
+
+    window.openSettingsModal = function () {
+        settingsModal.style.display = "block";
+    }
+
+    window.closeSettingsModal = function () {
+        settingsModal.style.display = "none";
+    }
+
+// Close the modal when the user clicks outside of it
+    window.onclick = function (event) {
+        if (event.target == settingsModal) {
+            settingsModal.style.display = "none";
+        }
+    }
+
+    // Chart.js setup
+    const ctx = document.getElementById('activity-chart').getContext('2d');
+    let chart = new Chart(ctx, {
+        type: 'line', data: {
+            labels: [], datasets: [{
+                label: 'User Activity', data: [], borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1, fill: false
+            }]
+        }, options: {
+            scales: {
+                x: {
+                    beginAtZero: true
+                }, y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Example data
+    const activityData = {
+        daily: {
+            labels: ["12 AM", "1 AM", "2 AM", "3 AM", "4 AM", "5 AM", "6 AM", "7 AM", "8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM", "7 PM", "8 PM", "9 PM", "10 PM", "11 PM"],
+            data: [0, 10, 0, 35, 20, 40, 45, 53, 55, 55, 55, 32, 60, 63, 65, 68, 70, 75, 78, 80, 90, 93, 93, 95]
+        }, weekly: {
+            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], data: [10, 15, 17, 20, 25, 32, 50]
+        }, monthly: {
+            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"], data: [0, 0, 0, 0, 0, 0]
+        }, yearly: {
+            labels: ["2023", "2024"], data: [0, 0]
+        }
+    };
+
+    window.showChart = function (period) {
+        const data = activityData[period];
+        chart.data.labels = data.labels;
+        chart.data.datasets[0].data = data.data;
+        chart.update();
+    }
+});
+
+function closePdfModal() {
+    const pdfModal = document.getElementById('pdf-modal');
+    pdfModal.style.display = 'none';
+}
