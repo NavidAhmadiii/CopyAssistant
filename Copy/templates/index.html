@@ -7,6 +7,7 @@
     <title>IELTS Ways Academy</title>
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css">
+<!--    <link rel="stylesheet" href="https://mozilla.github.io/pdf.js/web/viewer.css">-->
     <link rel="icon" type="image/x-icon" href="{% static 'favicon/IELTSWAYS.ico' %}">
 </head>
 <body>
@@ -20,8 +21,7 @@
     </div>
     <div class="content">
         <div class="editor-section">
-            <div id="editor-toolbar" class="highlighting-tools"></div>
-            <div id="editor" onInput="checkForErrors()"></div>
+            <div id="editor" onInput="checkForErrors()" ></div>
             <div class="footer">
                 <button class="start" onclick="start()">Start</button>
                 <button class="restart" onclick="restart()">Restart</button>
@@ -31,14 +31,15 @@
         </div>
 
         <div class="pdf-section">
-            <iframe id="pdf-reader" class="pdf-reader" src=""></iframe>
+            <iframe id="pdf-reader" class="pdf-reader" src="" ></iframe>
             <div class="pdf-controls">
                 <form id="pdf-form" method="POST" enctype="multipart/form-data">
                     <input type="file" name="pdf" id="pdf-input">
                 </form>
                 <button class="open-pdf" onclick="openPdf()">Open PDF</button>
                 <button class="close-pdf" onclick="closePdf()">Close PDF</button>
-                <button class="load-from-db" onclick="loadFromDatabase()">Load from DB</button>
+                <button class="load-from-db" onclick="loadFromDatabase()">IELTS Ways Book</button>
+
             </div>
         </div>
     </div>
@@ -56,6 +57,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.70/vfs_fonts.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html-to-pdfmake/browser.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.7.570/build/pdf.worker.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.7.570/build/pdf.js"></script>-->
 <script src="{% static 'js/script.js' %}"></script>
 </body>
 </html>

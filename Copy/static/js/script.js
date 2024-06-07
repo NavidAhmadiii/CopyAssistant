@@ -28,12 +28,9 @@ async function createPdf() {
 
     // ارسال محتوای ویرایش شده به سرور
     const response = await fetch('/create-pdf/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCSRFToken()
-        },
-        body: JSON.stringify({text: editorContent, timer: timerValue})
+        method: 'POST', headers: {
+            'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()
+        }, body: JSON.stringify({text: editorContent, timer: timerValue})
     });
 
     if (!response.ok) {
@@ -54,18 +51,12 @@ async function createPdf() {
 
     // تنظیمات مربوط به محتوای PDF
     const docDefinition = {
-        content: [
-            {text: `Timer: ${timerValue}`, style: 'header'},
-            {text: ' '}, // خط خالی برای فاصله
+        content: [{text: `Timer: ${timerValue}`, style: 'header'}, {text: ' '}, // خط خالی برای فاصله
             ...pdfContent // محتوای تبدیل شده
-        ],
-        styles: {
+        ], styles: {
             header: {
-                fontSize: 18,
-                bold: true,
-                margin: [0, 0, 0, 10]
-            },
-            content: {
+                fontSize: 18, bold: true, margin: [0, 0, 0, 10]
+            }, content: {
                 fontSize: 12
             }
         }
@@ -83,12 +74,9 @@ async function spellCheck() {
 
     try {
         const response = await fetch('/spell-check/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCSRFToken()
-            },
-            body: JSON.stringify({text})
+            method: 'POST', headers: {
+                'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken()
+            }, body: JSON.stringify({text})
         });
 
         if (!response.ok) {
@@ -179,6 +167,7 @@ function displayPDFList(pdfs) {
     pdfListContainer.innerHTML = ''; // Clear existing list
 
     pdfs.forEach(pdf => {
+        console.log('PDF URL:', pdf.url); // برای نمایش URL در کنسول
         const pdfItem = document.createElement('div');
         pdfItem.className = 'pdf-item';
         pdfItem.textContent = pdf.title;
@@ -189,7 +178,7 @@ function displayPDFList(pdfs) {
 
 function openPdfFromUrl(url) {
     const pdfReader = document.getElementById('pdf-reader');
-    pdfReader.src = url;
+    pdfReader.src = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`;
     closeModal();
 }
 
@@ -217,28 +206,77 @@ window.onclick = function (event) {
 <!-- Quill JS -->
 // editor
 document.addEventListener("DOMContentLoaded", function () {
-    var toolbarOptions = [
-        ['bold', 'italic', 'underline', 'strike'],
-        ['blockquote', 'code-block'],
-        [{'header': 1}, {'header': 2}],
-        [{'list': 'ordered'}, {'list': 'bullet'}],
-        [{'script': 'sub'}, {'script': 'super'}],
-        [{'indent': '-1'}, {'indent': '+1'}],
-        [{'direction': 'rtl'}],
-        [{'size': ['small', false, 'large', 'huge']}],
-        [{'header': [1, 2, 3, 4, 5, 6, false]}],
-        [{'color': []}, {'background': []}],
-        [{'font': []}],
-        [{'align': []}],
-        ['clean']
-    ];
+    var toolbarOptions = [['bold', 'italic', 'underline', 'strike'], ['blockquote', 'code-block'], [{'header': 1}, {'header': 2}], [{'list': 'ordered'}, {'list': 'bullet'}], [{'script': 'sub'}, {'script': 'super'}], [{'indent': '-1'}, {'indent': '+1'}], [{'direction': 'rtl'}], [{'size': ['small', false, 'large', 'huge']}], [{'header': [1, 2, 3, 4, 5, 6, false]}], [{'color': []}, {'background': []}], [{'font': []}], [{'align': []}], ['clean']];
 
     var quill = new Quill('#editor', {
         modules: {
             toolbar: toolbarOptions
-        },
-        theme: 'snow'
+        }, theme: 'snow'
     });
+
+    let previousRange = null;
+
+    quill.on('text-change', function (delta, oldDelta, source) {
+        if (source === 'user') {
+            let currentRange = quill.getSelection();
+            if (previousRange && currentRange.index < previousRange.index) {
+                let length = delta.ops[1].insert ? delta.ops[1].insert.length : 1;
+                quill.formatText(currentRange.index - length, length, {'color': 'red'});
+            }
+            previousRange = currentRange;
+        }
+    });
+
+    quill.keyboard.addBinding({
+        key: 'space',
+        collapsed: true,
+        format: [],
+        handler: function (range, context) {
+            quill.format('color', 'black');
+            return true;
+        }
+
+    });
+    quill.container.addEventListener('keydown', function (event) {
+        if (event.key === 'Backspace') {
+            let currentRange = quill.getSelection();
+            setTimeout(function () {
+                let length = previousRange ? previousRange.length : 0;
+                if (currentRange && previousRange && currentRange.index < previousRange.index && length > 0) {
+                    quill.formatText(currentRange.index, length, {'color': 'red'});
+                }
+            }, 0);
+        }
+    });
+
+
+    quill.on('selection-change', function (range, oldRange, source) {
+        if (source === 'user' && oldRange) {
+            let length = oldRange.length === 0 ? 1 : oldRange.length;
+            quill.formatText(oldRange.index, length, {'color': 'black'});
+        }
+    });
+
+    // رنگ متن را مشکی کنید هنگامی که کاربر اسپیس می‌زند
+    quill.container.addEventListener('keyup', function (event) {
+        if (event.key === ' ' || event.code === 'Space') {
+            quill.format('color', 'black');
+        }
+    });
+
+    quill.focus();
+
+    function checkPlaceholder() {
+        var editor = document.querySelector('.ql-editor');
+        if (editor.innerText.trim().length === 0) {
+            editor.setAttribute('data-placeholder', 'Start typing here...');
+        } else {
+            editor.removeAttribute('data-placeholder');
+        }
+    }
+
+    quill.on('text-change', checkPlaceholder);
+    checkPlaceholder();  // Check placeholder on load
 
     document.querySelector(".create-pdf").addEventListener("click", function () {
         var editorContent = document.querySelector('.ql-editor').innerHTML;
